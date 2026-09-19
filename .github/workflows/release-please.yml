@@ -63,8 +63,9 @@ jobs:
         run: git -c submodule."assets".update=checkout submodule update --init assets
 
       - name: Setup Mise
-        uses: immich-app/devtools/actions/use-mise@7b8610a904d57da241e4ddba17fa62b62b15aed4 # use-mise-action-v2.0.2
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
         with:
+          version: 2026.5.12
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Flatpak Tooling and Runtimes
