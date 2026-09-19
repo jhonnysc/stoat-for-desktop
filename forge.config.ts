@@ -112,8 +112,20 @@ const config: ForgeConfig = {
   rebuildConfig: {},
   makers,
   hooks: {
-    // Copy the node-pipewire dist to the app on linux
+    // Bundle the locally built Solid.js frontend into the Electron app.
     packageAfterCopy: async (_config, buildPath, _version, platform) => {
+      const frontendDist = path.resolve("for-web/packages/client/dist");
+
+      if (!fs.existsSync(path.join(frontendDist, "index.html"))) {
+        throw new Error(
+          "The web frontend is not built. Run `mise build` from the desktop repository first.",
+        );
+      }
+
+      fs.cpSync(frontendDist, path.join(buildPath, "frontend"), {
+        recursive: true,
+      });
+
       if (platform === "linux") {
         // Copy only the files we need to run the code, which is dist, LICENSE, and package.json
         fs.cpSync(

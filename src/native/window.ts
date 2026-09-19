@@ -1,4 +1,6 @@
-import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { isAbsolute, join, relative } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import {
   BrowserWindow,
@@ -8,6 +10,8 @@ import {
   desktopCapturer,
   ipcMain,
   nativeImage,
+  net,
+  protocol,
   session,
 } from "electron";
 
@@ -19,12 +23,66 @@ import { updateTrayMenu } from "./tray";
 // global reference to main window
 export let mainWindow: BrowserWindow;
 
+const LOCAL_PROTOCOL = "stoat";
+const frontendRoot = app.isPackaged
+  ? join(__dirname, "../../frontend")
+  : join(__dirname, "../../for-web/packages/client/dist");
+let localProtocolRegistered = false;
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: LOCAL_PROTOCOL,
+    privileges: {
+      corsEnabled: true,
+      secure: true,
+      standard: true,
+      stream: true,
+      supportFetchAPI: true,
+    },
+  },
+]);
+
 // currently in-use build
 export const BUILD_URL = new URL(
   app.commandLine.hasSwitch("force-server")
     ? app.commandLine.getSwitchValue("force-server")
-    : /*MAIN_WINDOW_VITE_DEV_SERVER_URL ??*/ "https://stoat.chat/app",
+    : getFrontendURL(),
 );
+
+function getFrontendURL() {
+  if (existsSync(join(frontendRoot, "index.html"))) {
+    return `${LOCAL_PROTOCOL}://app/`;
+  }
+
+  return "https://stoat.chat/app";
+}
+
+function registerLocalFrontendProtocol() {
+  if (localProtocolRegistered || BUILD_URL.protocol !== `${LOCAL_PROTOCOL}:`) {
+    return;
+  }
+
+  protocol.handle(LOCAL_PROTOCOL, async (request) => {
+    const requestURL = new URL(request.url);
+    const requestedPath = decodeURIComponent(requestURL.pathname).replace(
+      /^\/+/,
+      "",
+    );
+    const requestedFile = join(frontendRoot, requestedPath || "index.html");
+    const relativePath = relative(frontendRoot, requestedFile);
+    const isInsideFrontend =
+      relativePath === "" ||
+      (!relativePath.startsWith("..") && !isAbsolute(relativePath));
+    const filePath =
+      isInsideFrontend && existsSync(requestedFile)
+        ? requestedFile
+        : join(frontendRoot, "index.html");
+
+    return net.fetch(pathToFileURL(filePath).toString());
+  });
+
+  localProtocolRegistered = true;
+}
 
 // internal window state
 let shouldQuit = false;
@@ -38,6 +96,8 @@ const windowIcon = nativeImage.createFromDataURL(windowIconAsset);
  * Create the main application window
  */
 export function createMainWindow() {
+  registerLocalFrontendProtocol();
+
   // (CLI arg --hidden or config)
   const startHidden =
     app.commandLine.hasSwitch("hidden") || config.startMinimisedToTray;

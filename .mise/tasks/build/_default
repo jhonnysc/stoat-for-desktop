@@ -2,4 +2,6 @@
 #MISE description="Build desktop app"
 set -e
 
+mise -C for-web build:deps
+mise -C for-web build
 pnpm run -F stoat-desktop package
