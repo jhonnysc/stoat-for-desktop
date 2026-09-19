@@ -44,8 +44,15 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest, macos-26-intel]
-    
+        os:
+          [
+            ubuntu-latest,
+            ubuntu-24.04-arm,
+            windows-latest,
+            macos-latest,
+            macos-26-intel,
+          ]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,6 +61,11 @@ jobs:
 
       - name: Checkout assets
         run: git -c submodule."assets".update=checkout submodule update --init assets
+
+      - name: Setup Mise
+        uses: immich-app/devtools/actions/use-mise@7b8610a904d57da241e4ddba17fa62b62b15aed4 # use-mise-action-v2.0.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Flatpak Tooling and Runtimes
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm'
@@ -79,16 +91,24 @@ jobs:
       - name: Install dependencies
         run: pnpm ci
 
+      - name: Install web dependencies
+        run: mise -C for-web install:frozen
+
+      - name: Build web frontend
+        run: |
+          mise -C for-web build:deps
+          mise -C for-web build
+
       - name: Publish
         run: |
           pnpm run publish
         env:
           PLATFORM: ${{ matrix.os }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Tar gz
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm'
-        run : |
+        run: |
           cd ./out/Stoat-linux-${{ case(matrix.os == 'ubuntu-latest', 'x64', 'arm64') }}
           tar -zcvf ../../Stoat.tar.gz .
           cd ../..
@@ -99,7 +119,7 @@ jobs:
         with:
           name: stoat-linux-package-${{ case(matrix.os == 'ubuntu-latest', 'x64', 'arm64') }}
           path: ./Stoat.tar.gz
-  
+
   build-appimage:
     needs: [release-please, publish-release]
     if: needs.release-please.outputs.release_created == 'true'
@@ -160,5 +180,5 @@ jobs:
 
       - name: Update release with AppImage
         run: gh release upload v${{ needs.release-please.outputs.release_version }} Stoat-*.AppImage*
-        env: 
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -20,6 +20,7 @@ const STRINGS = {
 };
 
 const ASSET_DIR = "assets/desktop";
+const githubRepository = process.env.GITHUB_REPOSITORY?.split("/");
 
 /**
  * Build targets for the desktop app
@@ -112,8 +113,20 @@ const config: ForgeConfig = {
   rebuildConfig: {},
   makers,
   hooks: {
-    // Copy the node-pipewire dist to the app on linux
+    // Bundle the locally built Solid.js frontend into the Electron app.
     packageAfterCopy: async (_config, buildPath, _version, platform) => {
+      const frontendDist = path.resolve("for-web/packages/client/dist");
+
+      if (!fs.existsSync(path.join(frontendDist, "index.html"))) {
+        throw new Error(
+          "The web frontend is not built. Run `mise build` from the desktop repository first.",
+        );
+      }
+
+      fs.cpSync(frontendDist, path.join(buildPath, "frontend"), {
+        recursive: true,
+      });
+
       if (platform === "linux") {
         // Copy only the files we need to run the code, which is dist, LICENSE, and package.json
         fs.cpSync(
@@ -169,14 +182,19 @@ const config: ForgeConfig = {
       [FuseV1Options.OnlyLoadAppFromAsar]: true,
     }),
   ],
-  publishers: [
-    new PublisherGithub({
-      repository: {
-        owner: "stoatchat",
-        name: "for-desktop",
-      },
-    }),
-  ],
+  // Only publish when CI explicitly provides its current repository. This
+  // prevents a fork build from accidentally publishing to the upstream repo.
+  publishers:
+    githubRepository?.length === 2 && githubRepository[0] && githubRepository[1]
+      ? [
+          new PublisherGithub({
+            repository: {
+              owner: githubRepository[0],
+              name: githubRepository[1],
+            },
+          }),
+        ]
+      : [],
 };
 
 export default config;
