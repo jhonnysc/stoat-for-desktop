@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1](https://github.com/jhonnysc/stoat-for-desktop/compare/v1.6.0...v1.6.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* refresh release pipeline ([ee7d96a](https://github.com/jhonnysc/stoat-for-desktop/commit/ee7d96ad8c53c0e255874c9f20444459ac1709cb))
+* refresh release pipeline ([c3995ad](https://github.com/jhonnysc/stoat-for-desktop/commit/c3995ad9a30f11cfeb45ebadc42da61cf5cf302f))
+
 ## [1.6.0](https://github.com/jhonnysc/stoat-for-desktop/compare/v1.5.4...v1.6.0) (2026-09-19)
 
 
