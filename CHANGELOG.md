@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/jhonnysc/stoat-for-desktop/compare/v1.6.1...v1.6.2) (2026-09-19)
+
+
+### Bug Fixes
+
+* unblock arm64 release publish and flaky CI pnpm race ([baae7e9](https://github.com/jhonnysc/stoat-for-desktop/commit/baae7e9b82da4c0da5d949ee904ccd66177b4efb))
+
 ## [1.6.1](https://github.com/jhonnysc/stoat-for-desktop/compare/v1.6.0...v1.6.1) (2026-09-19)
 
 
