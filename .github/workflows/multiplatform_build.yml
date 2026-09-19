@@ -30,6 +30,11 @@ jobs:
       - name: Checkout assets
         run: git -c submodule."assets".update=checkout submodule update --init assets
 
+      - name: Setup Mise
+        uses: immich-app/devtools/actions/use-mise@7b8610a904d57da241e4ddba17fa62b62b15aed4 # use-mise-action-v2.0.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -43,6 +48,14 @@ jobs:
 
       - name: Install dependencies
         run: pnpm ci -F stoat-desktop
+
+      - name: Install web dependencies
+        run: mise -C for-web install:frozen
+
+      - name: Build web frontend
+        run: |
+          mise -C for-web build:deps
+          mise -C for-web build
 
       - name: Build
         run: pnpm package
