@@ -20,6 +20,7 @@ const STRINGS = {
 };
 
 const ASSET_DIR = "assets/desktop";
+const githubRepository = process.env.GITHUB_REPOSITORY?.split("/");
 
 /**
  * Build targets for the desktop app
@@ -181,14 +182,19 @@ const config: ForgeConfig = {
       [FuseV1Options.OnlyLoadAppFromAsar]: true,
     }),
   ],
-  publishers: [
-    new PublisherGithub({
-      repository: {
-        owner: "stoatchat",
-        name: "for-desktop",
-      },
-    }),
-  ],
+  // Only publish when CI explicitly provides its current repository. This
+  // prevents a fork build from accidentally publishing to the upstream repo.
+  publishers:
+    githubRepository?.length === 2 && githubRepository[0] && githubRepository[1]
+      ? [
+          new PublisherGithub({
+            repository: {
+              owner: githubRepository[0],
+              name: githubRepository[1],
+            },
+          }),
+        ]
+      : [],
 };
 
 export default config;
